@@ -4,7 +4,7 @@ A production-grade, full-stack SaaS platform that performs autonomous research, 
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 * **Deterministic Agent Orchestration:** Built with **LangGraph** (StateGraph) to coordinate 5 specialized AI agents (Planner, Harvester, Quality Validator, Literature Reader, and Editor/Synthesizer) with robust state boundaries and error routing.
 * **Streamlined Auto-Login & Sign Up:** Features a streamlined onboarding experience. Registering a brand new account automatically triggers a NextAuth session callback, logging the user in and redirecting them to the dashboard in a single click.
@@ -17,7 +17,7 @@ A production-grade, full-stack SaaS platform that performs autonomous research, 
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -65,7 +65,7 @@ stateDiagram-v2
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 research-agent/
@@ -179,7 +179,7 @@ npm run dev
 
 ---
 
-### 🐳 Full-Stack Docker Deployment
+### Full-Stack Docker Deployment
 You can also run the entire secure ecosystem, including a dedicated PostgreSQL database container, with a single command:
 ```bash
 # Ensure you have your keys configured in backend/.env first
@@ -189,7 +189,7 @@ docker compose up -d --build
 
 ---
 
-## 🔑 Environment Variables Configuration
+## Environment Variables Configuration
 
 ### Backend Environment Variables (`backend/.env`)
 
@@ -212,7 +212,7 @@ docker compose up -d --build
 
 ---
 
-## 🛡️ Security Implementation Highlights
+## Security Implementation Highlights
 
 * **Token Delivery Fallback for EventSource:** Browser-native `EventSource` APIs do not support setting custom headers (like `Authorization: Bearer <token>`). To solve this, `backend/app/api/deps.py` intercepts requests to the stream endpoint and extracts tokens from the query string:
   ```python
@@ -229,7 +229,7 @@ docker compose up -d --build
 
 ---
 
-## ⚙️ Diagnosic Diagnostics & Self-Tests
+## Diagnosic Diagnostics & Self-Tests
 On startup, the FastAPI server automatically executes core self-tests (verifying bcrypt hashing, JWT encryption, and database table creation) and prints a high-priority diagnostic report:
 ```
 ================================================================================
