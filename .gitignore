@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+*.db
+*.db-journal
+
+# Node
+node_modules/
+.next/
+.env.local
+.env*.local
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+logs/

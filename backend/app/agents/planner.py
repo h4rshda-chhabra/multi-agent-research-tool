@@ -1,0 +1,69 @@
+import json
+import structlog
+import google.generativeai as genai
+
+from app.config import get_settings
+from app.agents.state import ResearchState
+
+logger = structlog.get_logger()
+settings = get_settings()
+
+PLANNER_SYSTEM = """You are an expert academic research planner. Your job is to decompose a research topic into targeted search queries and subtopics.
+
+Return ONLY a valid JSON object — no markdown fences, no explanation. Schema:
+{
+  "topic": "<refined topic string>",
+  "queries": ["<query1>", ...],
+  "subtopics": ["<subtopic1>", ...],
+  "research_direction": "<one sentence describing the research approach>"
+}
+
+Rules:
+- Generate 6-8 diverse queries (definitions, implementations, benchmarks, comparisons, limitations, recent advances).
+- Each query should be distinct and suitable for academic/web search.
+- Subtopics: 3-6 key subtopics that compose the topic.
+"""
+
+
+async def planner_node(state: ResearchState) -> dict:
+    log = logger.bind(agent="planner", report_id=state["report_id"])
+    log.info("planner_start")
+
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+    model = genai.GenerativeModel(
+        model_name="gemini-2.5-flash",
+        system_instruction=PLANNER_SYSTEM,
+    )
+
+    try:
+        response = await model.generate_content_async(
+            f"Research topic: {state['topic']}",
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=1024,
+                response_mime_type="application/json",
+            ),
+        )
+
+        raw = response.text.strip()
+        # Strip markdown fences if model adds them anyway
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        data = json.loads(raw)
+
+        log.info("planner_complete", queries=len(data.get("queries", [])))
+        return {
+            "queries": data.get("queries", []),
+            "subtopics": data.get("subtopics", []),
+            "research_direction": data.get("research_direction", ""),
+            "current_agent": "planner",
+            "completed_agents": state.get("completed_agents", []) + ["planner"],
+        }
+
+    except Exception as exc:
+        log.error("planner_error", error=str(exc))
+        return {
+            "error": f"Planner failed: {exc}",
+            "current_agent": "planner",
+        }
