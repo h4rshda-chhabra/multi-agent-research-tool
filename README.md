@@ -1,4 +1,4 @@
-# Autonomous Multi-Agent AI Research Assistant
+# ResearchForge - Autonomous Multi-Agent AI Research Assistant
 
 A production-grade, full-stack SaaS platform that performs autonomous research, literature synthesis, and academic-grade report generation. Powered by a coordinated **5-agent LangGraph workflow** on the backend and a real-time, interactive **Next.js 15 App Router** frontend.
 
