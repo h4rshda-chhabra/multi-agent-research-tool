@@ -3,6 +3,7 @@ import google.generativeai as genai
 
 from app.config import get_settings
 from app.agents.state import ResearchState
+from app.agents.utils import generate_content_with_retry
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -31,7 +32,7 @@ Guidelines:
 - The Comparison Table should compare key approaches, methods, or tools.
 - References section must list all cited sources with their titles and URLs.
 - Minimum 1500 words total.
-- Do NOT include a preamble — start directly with the H1 heading.
+- Do NOT include a preamble - start directly with the H1 heading.
 """
 
 
@@ -53,7 +54,7 @@ async def synthesizer_node(state: ResearchState) -> dict:
 
     refs = []
     for i, s in enumerate(validated_sources, 1):
-        refs.append(f"[{i}] {s['title']} — {s['url']}")
+        refs.append(f"[{i}] {s['title']} - {s['url']}")
 
     findings_text = ""
     for f in findings:
@@ -76,7 +77,8 @@ async def synthesizer_node(state: ResearchState) -> dict:
     )
 
     try:
-        response = await model.generate_content_async(
+        response = await generate_content_with_retry(
+            model,
             user_message,
             generation_config=genai.types.GenerationConfig(max_output_tokens=6000),
         )

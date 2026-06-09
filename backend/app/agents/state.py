@@ -60,6 +60,9 @@ class ResearchState(TypedDict):
     # Synthesizer outputs
     report_markdown: str
 
+    # Insights outputs
+    insights: Optional[dict]
+
     # Meta
     current_agent: str
     completed_agents: list[str]

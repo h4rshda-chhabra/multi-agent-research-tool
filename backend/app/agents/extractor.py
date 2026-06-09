@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 from app.config import get_settings
 from app.agents.state import ResearchState
+from app.agents.utils import generate_content_with_retry
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -66,7 +67,8 @@ async def _extract_one(source: dict, topic: str, model: genai.GenerativeModel) -
         }
 
     try:
-        response = await model.generate_content_async(
+        response = await generate_content_with_retry(
+            model,
             f"Topic: {topic}\n\nSource: {source['title']}\nContent:\n{content}",
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=512,

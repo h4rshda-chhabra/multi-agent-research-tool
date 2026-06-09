@@ -4,13 +4,14 @@ import google.generativeai as genai
 
 from app.config import get_settings
 from app.agents.state import ResearchState
+from app.agents.utils import generate_content_with_retry
 
 logger = structlog.get_logger()
 settings = get_settings()
 
 PLANNER_SYSTEM = """You are an expert academic research planner. Your job is to decompose a research topic into targeted search queries and subtopics.
 
-Return ONLY a valid JSON object — no markdown fences, no explanation. Schema:
+Return ONLY a valid JSON object - no markdown fences, no explanation. Schema:
 {
   "topic": "<refined topic string>",
   "queries": ["<query1>", ...],
@@ -36,7 +37,8 @@ async def planner_node(state: ResearchState) -> dict:
     )
 
     try:
-        response = await model.generate_content_async(
+        response = await generate_content_with_retry(
+            model,
             f"Research topic: {state['topic']}",
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=1024,

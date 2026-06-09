@@ -4,6 +4,7 @@ import google.generativeai as genai
 
 from app.config import get_settings
 from app.agents.state import ResearchState
+from app.agents.utils import generate_content_with_retry
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -58,7 +59,8 @@ async def validator_node(state: ResearchState) -> dict:
     ]
 
     try:
-        response = await model.generate_content_async(
+        response = await generate_content_with_retry(
+            model,
             f"Research topic: {state['topic']}\n\nSources:\n{json.dumps(compact, indent=2)}",
             generation_config=genai.types.GenerationConfig(
                 max_output_tokens=2048,
