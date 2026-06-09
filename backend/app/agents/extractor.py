@@ -111,9 +111,8 @@ async def extractor_node(state: ResearchState) -> dict:
         return {"error": "No validated sources", "current_agent": "extractor"}
 
     genai.configure(api_key=settings.GEMINI_API_KEY)
-    # gemini-2.5-flash-lite: faster/cheaper for per-source extraction
     model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash-lite",
+        model_name="gemini-2.5-flash",
         system_instruction=EXTRACTOR_SYSTEM,
     )
 

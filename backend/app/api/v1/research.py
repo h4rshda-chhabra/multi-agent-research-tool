@@ -14,7 +14,7 @@ from app.models.saved_report import SavedReport
 from app.models.user import User
 from app.schemas.research import ResearchRequest, ResearchStartResponse
 from app.schemas.report import ReportOut
-from app.services.research_service import run_research, stream_progress
+from app.services.research_service import run_research, stream_progress, cancel_research
 
 router = APIRouter(prefix="/research", tags=["research"])
 
@@ -61,9 +61,36 @@ async def research_stream(
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.post("/{report_id}/cancel")
+async def cancel_research_endpoint(
+    report_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(
+        select(Report).where(Report.id == report_id, Report.user_id == current_user.id)
+    )
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if report.status != "running":
+        raise HTTPException(status_code=400, detail="Report is not running")
+
+    cancelled = cancel_research(report_id)
+    if cancelled:
+        return {"message": "Cancellation requested"}
+
+    # No active in-memory session (e.g. backend was restarted) — cancel via DB directly
+    report.status = "cancelled"
+    report.error_message = "Research cancelled by user"
+    await db.commit()
+    return {"message": "Research cancelled"}
 
 
 @router.get("/{report_id}", response_model=ReportOut)

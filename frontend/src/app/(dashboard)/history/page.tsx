@@ -13,6 +13,7 @@ const STATUS_ICON: Record<ReportStatus, React.ElementType> = {
   running: Loader2,
   complete: CheckCircle2,
   failed: AlertCircle,
+  cancelled: AlertCircle,
 };
 
 const STATUS_COLOR: Record<ReportStatus, string> = {
@@ -20,6 +21,7 @@ const STATUS_COLOR: Record<ReportStatus, string> = {
   running: "text-brand-400",
   complete: "text-green-400",
   failed: "text-red-400",
+  cancelled: "text-yellow-400",
 };
 
 export default function HistoryPage() {

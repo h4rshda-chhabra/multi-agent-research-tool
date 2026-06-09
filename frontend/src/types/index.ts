@@ -14,7 +14,7 @@ export interface AuthToken {
   plan: string;
 }
 
-export type ReportStatus = "pending" | "running" | "complete" | "failed";
+export type ReportStatus = "pending" | "running" | "complete" | "failed" | "cancelled";
 
 export type AgentName = "planner" | "search" | "validator" | "extractor" | "synthesizer";
 
@@ -73,7 +73,7 @@ export interface ReportListItem {
 }
 
 export interface SSEEvent {
-  type: "agent_start" | "agent_complete" | "agent_error" | "complete" | "error" | "ping";
+  type: "agent_start" | "agent_complete" | "agent_error" | "complete" | "error" | "cancelled" | "ping";
   agent?: AgentName;
   message: string;
   report_id: string;

@@ -35,7 +35,7 @@ npm run dev                                    # http://localhost:3000
 ### Docker (full stack)
 
 ```bash
-cp backend/.env.example .env                  # set ANTHROPIC_API_KEY + TAVILY_API_KEY
+cp backend/.env.example .env                  # set GEMINI_API_KEY + TAVILY_API_KEY
 docker compose up --build
 ```
 
@@ -52,11 +52,11 @@ backend/
     agents/
       state.py                ResearchState TypedDict — the shared graph state
       graph.py                LangGraph StateGraph; error-exits via conditional edges
-      planner.py              Claude claude-sonnet-4-6 → JSON queries + subtopics
+      planner.py              gemini-2.5-flash → JSON queries + subtopics
       search.py               Tavily + arxiv in parallel; deduplication by URL
-      validator.py            Claude scores sources; domain heuristic for credibility
-      extractor.py            HTTP fetch + Claude Haiku per source (concurrent)
-      synthesizer.py          Claude claude-sonnet-4-6 → full markdown report
+      validator.py            gemini-2.5-flash scores sources; domain heuristic for credibility
+      extractor.py            HTTP fetch + gemini-2.5-flash per source (concurrent)
+      synthesizer.py          gemini-2.5-flash → full markdown report
     api/v1/                   auth / research / reports / export routers
     services/
       research_service.py     Runs graph.astream(); SSE via asyncio.Queue per report_id
@@ -85,13 +85,14 @@ frontend/src/
 - **SSE streaming**: `research_service.py` holds `_progress_queues: dict[str, asyncio.Queue]`. `run_research()` background task writes events; `stream_progress()` generator reads them. Frontend uses native `EventSource`.
 - **LangGraph error routing**: After every node, `_should_continue()` checks `state["error"]`; routes to END on error, stopping the pipeline.
 - **DB switching**: Set `DATABASE_URL=sqlite+aiosqlite:///./research.db` for local dev (zero config); set PostgreSQL URL for prod. SQLAlchemy connect_args differ per dialect.
-- **Agent model choice**: Synthesizer/Planner/Validator use `gemini-2.0-flash` (quality). Extractor uses `gemini-2.0-flash-lite` (speed/cost) since it runs once per source.
+- **Agent model choice**: All agents use `gemini-2.5-flash`.
+- **SSE events**: Backend emits `agent_start` (before a node runs) and `agent_complete` (after). Frontend hook handles both; `agent_complete` also sets the next agent to "running" as a backwards-compat fallback.
 
 ## Required environment variables
 
 Backend `.env`:
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AIza...
 TAVILY_API_KEY=tvly-...
 SECRET_KEY=<random 32+ chars>
 DATABASE_URL=sqlite+aiosqlite:///./research.db

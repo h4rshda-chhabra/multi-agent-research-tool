@@ -104,6 +104,10 @@ export async function getReport(reportId: string): Promise<Report> {
   return data;
 }
 
+export async function cancelResearch(reportId: string): Promise<void> {
+  await apiClient.post(`/research/${reportId}/cancel`);
+}
+
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
 export async function listReports(): Promise<ReportListItem[]> {

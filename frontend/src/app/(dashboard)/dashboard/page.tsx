@@ -14,6 +14,7 @@ const STATUS_CONFIG: Record<ReportStatus, { label: string; color: string; icon: 
   running: { label: "Running", color: "text-brand-400 bg-brand-400/10", icon: Loader2 },
   complete: { label: "Complete", color: "text-green-400 bg-green-400/10", icon: CheckCircle2 },
   failed: { label: "Failed", color: "text-red-400 bg-red-400/10", icon: AlertCircle },
+  cancelled: { label: "Cancelled", color: "text-yellow-400 bg-yellow-400/10", icon: AlertCircle },
 };
 
 export default function DashboardPage() {

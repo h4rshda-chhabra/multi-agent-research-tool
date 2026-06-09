@@ -28,11 +28,13 @@ interface Props {
 
 export function AgentTimeline({ steps }: Props) {
   return (
-    <div className="glass rounded-2xl p-6">
-      <h3 className="text-sm font-semibold text-slate-300 mb-5 uppercase tracking-wider">
+    <div className="glass rounded-2xl p-6 h-full flex flex-col">
+      <h3 className="text-sm font-semibold text-slate-300 mb-5 uppercase tracking-wider flex-shrink-0">
         Agent Pipeline
       </h3>
-      <div className="space-y-4">
+
+      {/* Steps — scrollable if they somehow overflow, but 5 agents always fit */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
         {steps.map((step, i) => {
           const Icon = AGENT_ICONS[step.name];
           const isRunning = step.status === "running";
@@ -121,7 +123,9 @@ export function AgentTimeline({ steps }: Props) {
               </div>
 
               {/* Step number */}
-              <span className="text-xs text-slate-600 font-mono">{String(i + 1).padStart(2, "0")}</span>
+              <span className="text-xs text-slate-600 font-mono flex-shrink-0">
+                {String(steps.indexOf(step) + 1).padStart(2, "0")}
+              </span>
             </motion.div>
           );
         })}

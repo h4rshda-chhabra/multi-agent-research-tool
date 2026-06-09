@@ -27,8 +27,13 @@ export function ResearchInput() {
       toast.error("Please enter a topic (min 5 characters)");
       return;
     }
-    const { report_id } = await start(trimmed);
-    router.push(`/research/${report_id}`);
+    try {
+      const { report_id } = await start(trimmed);
+      router.push(`/research/${report_id}`);
+    } catch {
+      // onError in useStartResearch already shows a toast; swallow the rejection
+      // so it doesn't surface as an unhandled promise error in the console.
+    }
   }
 
   return (
