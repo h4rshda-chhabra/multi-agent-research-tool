@@ -2,11 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# WeasyPrint system deps
-RUN apt-get update && apt-get install -y \
-    libpango-1.0-0 libpangocairo-1.0-0 libcairo2 \
-    libgdk-pixbuf2.0-0 libffi-dev libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# No system packages required — WeasyPrint (GTK) is not used in this image;
+# PDF export falls back to fpdf2 (pure Python, no native deps).
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
