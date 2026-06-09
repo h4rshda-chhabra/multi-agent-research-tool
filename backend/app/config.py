@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
@@ -11,6 +12,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
 
     DATABASE_URL: str = "sqlite+aiosqlite:///./research.db"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalise_db_url(cls, v: str) -> str:
+        # Render and most PaaS providers give postgresql:// or postgres://.
+        # SQLAlchemy's async engine requires the +asyncpg dialect prefix.
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     GEMINI_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
