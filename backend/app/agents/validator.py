@@ -1,6 +1,7 @@
 import json
 import structlog
-import google.generativeai as genai
+from types import SimpleNamespace
+from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
@@ -47,9 +48,9 @@ async def validator_node(state: ResearchState) -> dict:
     if not raw_sources:
         return {"error": "No sources to validate", "current_agent": "validator"}
 
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+    # Configuration handled by OpenRouterModel
+    model = OpenRouterModel(
+        model_name=settings.OPENROUTER_MODEL,
         system_instruction=VALIDATOR_SYSTEM,
     )
 
@@ -62,10 +63,7 @@ async def validator_node(state: ResearchState) -> dict:
         response = await generate_content_with_retry(
             model,
             f"Research topic: {state['topic']}\n\nSources:\n{json.dumps(compact, indent=2)}",
-            generation_config=genai.types.GenerationConfig(
-                max_output_tokens=2048,
-                response_mime_type="application/json",
-            ),
+            generation_config=SimpleNamespace(max_output_tokens=2048, response_mime_type="application/json"),
         )
 
         raw = response.text.strip()

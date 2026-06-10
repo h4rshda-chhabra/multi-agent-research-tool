@@ -1,7 +1,7 @@
+# backend/app/config.py
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -24,8 +24,13 @@ class Settings(BaseSettings):
             return v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
 
+    # Existing keys
     GEMINI_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
+
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "openrouter/anthropic/claude-3.5-sonnet"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     FRONTEND_URL: str = "http://localhost:3001"
     # Comma-separated list of additional allowed CORS origins.
@@ -48,8 +53,9 @@ class Settings(BaseSettings):
             missing.append("GEMINI_API_KEY")
         if not self.TAVILY_API_KEY or self.TAVILY_API_KEY.startswith("tvly-..."):
             missing.append("TAVILY_API_KEY")
+        if not self.OPENROUTER_API_KEY:
+            missing.append("OPENROUTER_API_KEY")
         return missing
-
 
 @lru_cache
 def get_settings() -> Settings:

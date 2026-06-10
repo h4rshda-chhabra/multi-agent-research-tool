@@ -1,6 +1,7 @@
 import json
 import structlog
-import google.generativeai as genai
+# OpenRouter integration
+from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
@@ -30,9 +31,9 @@ async def planner_node(state: ResearchState) -> dict:
     log = logger.bind(agent="planner", report_id=state["report_id"])
     log.info("planner_start")
 
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+    # Configuration handled by OpenRouterModel
+    model = OpenRouterModel(
+        model_name=settings.OPENROUTER_MODEL,
         system_instruction=PLANNER_SYSTEM,
     )
 

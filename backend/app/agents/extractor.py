@@ -2,7 +2,7 @@ import asyncio
 import json
 import structlog
 import httpx
-import google.generativeai as genai
+from app.agents.openrouter_client import OpenRouterModel
 from bs4 import BeautifulSoup
 
 from app.config import get_settings
@@ -49,7 +49,7 @@ async def _fetch_content(url: str, source_type: str) -> str:
         return ""
 
 
-async def _extract_one(source: dict, topic: str, model: genai.GenerativeModel) -> dict:
+async def _extract_one(source: dict, topic: str, model: OpenRouterModel) -> dict:
     content = await _fetch_content(source["url"], source.get("source_type", "web"))
 
     if not content:
@@ -70,10 +70,7 @@ async def _extract_one(source: dict, topic: str, model: genai.GenerativeModel) -
         response = await generate_content_with_retry(
             model,
             f"Topic: {topic}\n\nSource: {source['title']}\nContent:\n{content}",
-            generation_config=genai.types.GenerationConfig(
-                max_output_tokens=512,
-                response_mime_type="application/json",
-            ),
+            generation_config=SimpleNamespace(max_output_tokens=512, response_mime_type="application/json"),
         )
         raw = response.text.strip()
         if raw.startswith("```"):
@@ -110,9 +107,8 @@ async def extractor_node(state: ResearchState) -> dict:
     if not validated_sources:
         return {"error": "No validated sources", "current_agent": "extractor"}
 
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+    model = OpenRouterModel(
+        model_name=settings.OPENROUTER_MODEL,
         system_instruction=EXTRACTOR_SYSTEM,
     )
 

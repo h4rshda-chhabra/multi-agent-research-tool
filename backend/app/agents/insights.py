@@ -1,6 +1,6 @@
 import json
 import structlog
-import google.generativeai as genai
+from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
@@ -84,9 +84,8 @@ async def insights_node(state: ResearchState) -> dict:
     log = logger.bind(agent="insights", report_id=state["report_id"])
     log.info("insights_start")
 
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+    model = OpenRouterModel(
+        model_name=settings.OPENROUTER_MODEL,
         system_instruction=INSIGHTS_SYSTEM,
     )
 
@@ -140,10 +139,7 @@ Generate comprehensive research insights for this topic based strictly on the ab
     try:
         response = await model.generate_content_async(
             user_msg,
-            generation_config=genai.types.GenerationConfig(
-                max_output_tokens=8192,
-                response_mime_type="application/json",
-            ),
+            generation_config=SimpleNamespace(max_output_tokens=8192, response_mime_type="application/json"),
         )
 
         raw = response.text.strip()

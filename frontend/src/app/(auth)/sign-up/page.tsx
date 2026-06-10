@@ -16,10 +16,27 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Simple email format validation
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
+      // Validate inputs before sending to backend
+      if (!name.trim()) {
+        toast.error("Name cannot be empty");
+        return;
+      }
+      if (!isValidEmail(email)) {
+        toast.error("Please enter a valid email address");
+        return;
+      }
+      if (password.length < 8) {
+        toast.error("Password must be at least 8 characters");
+        return;
+      }
+
       // 1. Create the account in the database
       await registerApi(name, email, password);
       

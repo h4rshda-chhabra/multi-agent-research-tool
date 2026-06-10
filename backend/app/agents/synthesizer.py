@@ -1,5 +1,6 @@
 import structlog
-import google.generativeai as genai
+from types import SimpleNamespace
+from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
@@ -43,9 +44,8 @@ async def synthesizer_node(state: ResearchState) -> dict:
     log = logger.bind(agent="synthesizer", report_id=state["report_id"])
     log.info("synthesizer_start")
 
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+    model = OpenRouterModel(
+        model_name=settings.OPENROUTER_MODEL,
         system_instruction=SYNTHESIZER_SYSTEM.format(topic=state["topic"]),
     )
 
@@ -80,7 +80,7 @@ async def synthesizer_node(state: ResearchState) -> dict:
         response = await generate_content_with_retry(
             model,
             user_message,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=6000),
+            generation_config=SimpleNamespace(max_output_tokens=6000),
         )
 
         markdown = response.text.strip()
