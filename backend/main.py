@@ -82,44 +82,65 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Build the CORS allowed-origins list.
+# ── CORS ────────────────────────────────────────────────────────────────────
 #
-# Production (Render): set FRONTEND_URL and/or CORS_ORIGINS in the dashboard.
-# Development: localhost variants are always included.
-_cors_set: set[str] = set()
+# Starlette's CORSMiddleware supports allow_origin_regex.  When an origin
+# matches via regex the middleware echoes back that *specific* origin (not
+# "*"), which keeps allow_credentials=True valid per the CORS spec.
+#
+# Two-layer strategy:
+#   1. Explicit list  – localhost always included; FRONTEND_URL / CORS_ORIGINS
+#                       from env vars for any named production/custom domains.
+#   2. Regex pattern  – matches every *.vercel.app URL (production + previews)
+#                       so no env-var change is needed per Vercel deployment.
 
+# Layer 1 – explicit origins
+_explicit_origins: set[str] = {
+    # Local development — always permitted regardless of APP_ENV
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+}
+
+# Primary deployed frontend (set FRONTEND_URL on the Render dashboard)
 if settings.FRONTEND_URL:
-    _cors_set.add(settings.FRONTEND_URL.rstrip("/"))
+    _explicit_origins.add(settings.FRONTEND_URL.rstrip("/"))
 
-# CORS_ORIGINS accepts a comma-separated list of extra origins so that Vercel
-# preview deployments, custom domains, etc. can be added without code changes.
+# Optional extra origins: comma-separated for custom domains / staging URLs
 if settings.CORS_ORIGINS:
     for _o in settings.CORS_ORIGINS.split(","):
         _o = _o.strip().rstrip("/")
         if _o:
-            _cors_set.add(_o)
+            _explicit_origins.add(_o)
 
-# Always allow localhost in non-production so local dev works out of the box.
-if not settings.is_production:
-    _cors_set.update([
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ])
+allowed_origins: list[str] = sorted(_explicit_origins)
 
-allowed_origins = sorted(_cors_set)
-logger.info("cors_origins", origins=allowed_origins)
+# Layer 2 – regex for *.vercel.app (production + every preview deployment)
+# re.fullmatch() is used internally, so the pattern must match the whole origin.
+_VERCEL_ORIGIN_RE = r"https://[a-zA-Z0-9][a-zA-Z0-9\-]*\.vercel\.app"
 
-# CORSMiddleware must be the outermost middleware so it intercepts OPTIONS
-# preflight requests before any auth/routing logic runs.
+# ── Startup logging (visible in Render / Docker logs) ───────────────────────
+print("=" * 60, flush=True)
+print("[CORS] Explicit allowed origins:", flush=True)
+for _origin in allowed_origins:
+    print(f"  {_origin}", flush=True)
+print(f"[CORS] Origin regex pattern:  {_VERCEL_ORIGIN_RE}", flush=True)
+print("=" * 60, flush=True)
+
+# ── Register CORSMiddleware BEFORE routers ───────────────────────────────────
+# app.add_middleware() wraps in LIFO order.  With only this one middleware
+# call before include_router(), CORSMiddleware is the outermost layer and
+# therefore intercepts every OPTIONS preflight before auth / routing runs.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=_VERCEL_ORIGIN_RE,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
+    max_age=600,
 )
 
 app.include_router(v1_router)
