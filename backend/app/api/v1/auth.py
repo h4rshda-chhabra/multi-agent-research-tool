@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 import bcrypt
+import structlog
 from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,22 +43,27 @@ def _create_token(user_id: str) -> str:
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: RegisterRequest, db: Annotated[AsyncSession, Depends(get_db)]):
-    existing = await db.execute(select(User).where(User.email == body.email))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email already registered")
+    logger = structlog.get_logger()
+    try:
+        existing = await db.execute(select(User).where(User.email == body.email))
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Email already registered")
 
-    user = User(name=body.name, email=body.email, hashed_password=_hash(body.password))
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
+        user = User(name=body.name, email=body.email, hashed_password=_hash(body.password))
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
-    return TokenResponse(
-        access_token=_create_token(user.id),
-        user_id=user.id,
-        name=user.name,
-        email=user.email,
-        plan=user.plan,
-    )
+        return TokenResponse(
+            access_token=_create_token(user.id),
+            user_id=user.id,
+            name=user.name,
+            email=user.email,
+            plan=user.plan,
+        )
+    except Exception as e:
+        logger.error("Registration failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error during registration")
 
 
 @router.post("/login", response_model=TokenResponse)

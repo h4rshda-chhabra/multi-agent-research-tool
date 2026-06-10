@@ -9,6 +9,7 @@ from app.database import create_tables
 from app.api.v1 import v1_router
 
 settings = get_settings()
+import app.logging_config
 logger = structlog.get_logger()
 
 
