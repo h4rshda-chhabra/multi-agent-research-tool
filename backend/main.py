@@ -148,5 +148,57 @@ app.include_router(v1_router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    diagnostics = {}
+    
+    # 1. Test Auth Subsystem
+    try:
+        from app.api.v1.auth import _hash, _verify, _create_token
+        from jose import jwt
+        
+        test_password = "startup-test-password-123"
+        hashed = _hash(test_password)
+        if not _verify(test_password, hashed):
+            raise ValueError("Bcrypt verification failed")
+            
+        test_user_id = "test-user-id"
+        token = _create_token(test_user_id)
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("sub") != test_user_id:
+            raise ValueError("JWT sub match failed")
+            
+        diagnostics["auth"] = {"status": "ok"}
+    except Exception as e:
+        import traceback
+        diagnostics["auth"] = {
+            "status": "failed",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+    # 2. Test DB Connectivity
+    try:
+        from app.database import AsyncSessionLocal
+        from sqlalchemy import text
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        diagnostics["db"] = {"status": "ok"}
+    except Exception as e:
+        import traceback
+        diagnostics["db"] = {
+            "status": "failed",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+    # If any diagnostics failed, return 500 so we know something is wrong, but with full details
+    status_code = 200
+    if any(d.get("status") == "failed" for d in diagnostics.values()):
+        status_code = 500
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=status_code,
+        content={"status": "ok" if status_code == 200 else "error", "diagnostics": diagnostics}
+    )
+
 
