@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""
 
     FRONTEND_URL: str = "http://localhost:3001"
+    # Comma-separated list of additional allowed CORS origins.
+    # Use this on Render/Vercel to add production URLs without changing code:
+    #   CORS_ORIGINS=https://your-app.vercel.app,https://custom-domain.com
+    CORS_ORIGINS: str = ""
 
     @property
     def is_sqlite(self) -> bool:

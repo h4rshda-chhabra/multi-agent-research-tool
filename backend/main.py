@@ -82,24 +82,44 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Standardize frontend origins for CORS configuration
-allowed_origins = ["http://localhost:3001"]
-if settings.FRONTEND_URL and settings.FRONTEND_URL not in allowed_origins:
-    allowed_origins.append(settings.FRONTEND_URL)
+# Build the CORS allowed-origins list.
+#
+# Production (Render): set FRONTEND_URL and/or CORS_ORIGINS in the dashboard.
+# Development: localhost variants are always included.
+_cors_set: set[str] = set()
 
+if settings.FRONTEND_URL:
+    _cors_set.add(settings.FRONTEND_URL.rstrip("/"))
+
+# CORS_ORIGINS accepts a comma-separated list of extra origins so that Vercel
+# preview deployments, custom domains, etc. can be added without code changes.
+if settings.CORS_ORIGINS:
+    for _o in settings.CORS_ORIGINS.split(","):
+        _o = _o.strip().rstrip("/")
+        if _o:
+            _cors_set.add(_o)
+
+# Always allow localhost in non-production so local dev works out of the box.
 if not settings.is_production:
-    for local_origin in ["http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3001"]:
-        if local_origin not in allowed_origins:
-            allowed_origins.append(local_origin)
+    _cors_set.update([
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ])
 
-# Configure CORS middleware globally before defining routes
-# Automatically include:
+allowed_origins = sorted(_cors_set)
+logger.info("cors_origins", origins=allowed_origins)
+
+# CORSMiddleware must be the outermost middleware so it intercepts OPTIONS
+# preflight requests before any auth/routing logic runs.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.include_router(v1_router)
