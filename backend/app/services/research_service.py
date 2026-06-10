@@ -77,7 +77,7 @@ async def _update_agent_run(
         )
     )
     run = result.scalar_one_or_none()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     if run is None:
         run = AgentRun(
