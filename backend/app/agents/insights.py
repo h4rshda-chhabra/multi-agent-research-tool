@@ -1,5 +1,6 @@
 import json
 import structlog
+from types import SimpleNamespace
 from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings

@@ -26,14 +26,20 @@ async def start_research(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    report = Report(
-        id=str(uuid.uuid4()),
-        user_id=current_user.id,
-        topic=body.topic,
-        status="running",
-    )
-    db.add(report)
-    await db.commit()
+    try:
+        report = Report(
+            id=str(uuid.uuid4()),
+            user_id=current_user.id,
+            topic=body.topic,
+            status="running",
+        )
+        db.add(report)
+        await db.commit()
+    except Exception as e:
+        import structlog
+        logger = structlog.get_logger()
+        logger.error("Failed to create research report", error=str(e), exc_info=True)
+        raise HTTPException(status_code=503, detail="Database is temporarily unavailable")
 
     background_tasks.add_task(run_research, report.id, body.topic, current_user.id)
 

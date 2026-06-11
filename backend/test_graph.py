@@ -20,8 +20,8 @@ async def main():
     print("=" * 60)
     print("      AI Research Assistant - Agent Graph Test      ")
     print("=" * 60)
-    print(f"Anthropic API Key Loaded: {'Yes (sk-ant...)' if anthropic_key else 'No ❌'}")
-    print(f"Tavily API Key Loaded:    {'Yes (tvly...)' if tavily_key else 'No ❌'}")
+    print(f"Anthropic API Key Loaded: {'Yes (sk-ant...)' if anthropic_key else 'No X'}")
+    print(f"Tavily API Key Loaded:    {'Yes (tvly...)' if tavily_key else 'No X'}")
     print("-" * 60)
 
     if not anthropic_key or not tavily_key:

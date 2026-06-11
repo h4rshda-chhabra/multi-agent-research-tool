@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""
 
     OPENROUTER_API_KEY: str = ""
-    OPENROUTER_MODEL: str = "openrouter/anthropic/claude-3.5-sonnet"
+    OPENROUTER_MODEL: str = "anthropic/claude-sonnet-4.6"
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     FRONTEND_URL: str = "http://localhost:3001"

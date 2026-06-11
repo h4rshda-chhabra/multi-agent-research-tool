@@ -2,6 +2,7 @@ import asyncio
 import json
 import structlog
 import httpx
+from types import SimpleNamespace
 from app.agents.openrouter_client import OpenRouterModel
 from bs4 import BeautifulSoup
 

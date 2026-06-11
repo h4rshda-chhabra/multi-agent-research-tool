@@ -1,5 +1,6 @@
 import json
 import structlog
+from types import SimpleNamespace
 # OpenRouter integration
 from app.agents.openrouter_client import OpenRouterModel
 
@@ -41,7 +42,7 @@ async def planner_node(state: ResearchState) -> dict:
         response = await generate_content_with_retry(
             model,
             f"Research topic: {state['topic']}",
-            generation_config=genai.types.GenerationConfig(
+            generation_config=SimpleNamespace(
                 max_output_tokens=1024,
                 response_mime_type="application/json",
             ),

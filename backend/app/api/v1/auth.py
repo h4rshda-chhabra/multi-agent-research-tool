@@ -61,8 +61,10 @@ async def register(body: RegisterRequest, db: Annotated[AsyncSession, Depends(ge
             email=user.email,
             plan=user.plan,
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error("Registration failed", error=str(e))
+        logger.error("Registration failed", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error during registration")
 
 
