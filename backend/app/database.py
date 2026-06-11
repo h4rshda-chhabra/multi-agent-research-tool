@@ -33,3 +33,14 @@ async def get_db() -> AsyncSession:
 async def create_tables() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        
+        from sqlalchemy import text
+        try:
+            await conn.execute(text("ALTER TABLE sources ADD COLUMN authors VARCHAR(1000)"))
+        except Exception:
+            pass
+
+        try:
+            await conn.execute(text("ALTER TABLE sources ADD COLUMN doi VARCHAR(255)"))
+        except Exception:
+            pass
