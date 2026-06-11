@@ -144,7 +144,9 @@ export function ReportViewer({ report }: Props) {
               <div className="flex-1 min-h-0 overflow-hidden px-8 pt-8 pb-0 pointer-events-none select-none">
                 <div className="prose prose-invert max-w-none text-sm">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                    {report.markdown_content ?? ""}
+                    {(report.markdown_content ?? "")
+                      .replace(/(?<!\[)\[(\d+)\](?!\(|:)/g, '[^$1]')
+                      .replace(/^\[(\d+)\]:/gm, '[^$1]:')}
                   </ReactMarkdown>
                 </div>
               </div>
@@ -259,7 +261,9 @@ export function ReportViewer({ report }: Props) {
               <div className="flex-1 overflow-y-auto px-7 md:px-10 py-8">
                 <div className="prose prose-invert max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                    {report.markdown_content ?? ""}
+                    {(report.markdown_content ?? "")
+                      .replace(/(?<!\[)\[(\d+)\](?!\(|:)/g, '[^$1]')
+                      .replace(/^\[(\d+)\]:/gm, '[^$1]:')}
                   </ReactMarkdown>
                 </div>
               </div>
