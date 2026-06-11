@@ -56,7 +56,7 @@ async def validator_node(state: ResearchState) -> dict:
 
     compact = [
         {"url": s["url"], "title": s["title"], "snippet": s["snippet"][:200], "date": s.get("published_date", "")}
-        for s in raw_sources
+        for s in raw_sources[:10]
     ]
 
     try:
@@ -107,7 +107,7 @@ async def validator_node(state: ResearchState) -> dict:
         })
 
     validated.sort(key=lambda x: x["total_score"], reverse=True)
-    top = [v for v in validated if v["total_score"] >= 4.5][:12]
+    top = [v for v in validated if v["total_score"] >= 4.5][:5]
 
     log.info("validator_complete", kept=len(top))
     return {

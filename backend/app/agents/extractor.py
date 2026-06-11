@@ -113,7 +113,7 @@ async def extractor_node(state: ResearchState) -> dict:
         system_instruction=EXTRACTOR_SYSTEM,
     )
 
-    top_sources = validated_sources[:8]
+    top_sources = validated_sources[:5]
 
     findings = await asyncio.gather(
         *[_extract_one(s, state["topic"], model) for s in top_sources]

@@ -22,9 +22,9 @@ Return ONLY a valid JSON object - no markdown fences, no explanation. Schema:
 }
 
 Rules:
-- Generate 6-8 diverse queries (definitions, implementations, benchmarks, comparisons, limitations, recent advances).
+- Generate exactly 4 diverse queries (definitions, implementations, benchmarks, comparisons, limitations, recent advances).
 - Each query should be distinct and suitable for academic/web search.
-- Subtopics: 3-6 key subtopics that compose the topic.
+- Subtopics: 2-3 key subtopics that compose the topic.
 """
 
 
@@ -43,7 +43,7 @@ async def planner_node(state: ResearchState) -> dict:
             model,
             f"Research topic: {state['topic']}",
             generation_config=SimpleNamespace(
-                max_output_tokens=1024,
+                max_output_tokens=512,
                 response_mime_type="application/json",
             ),
         )

@@ -32,7 +32,7 @@ Guidelines:
 - Use inline citations like [1], [2], etc., mapped to the References section.
 - The Comparison Table should compare key approaches, methods, or tools.
 - References section must list all cited sources with their titles and URLs.
-- Minimum 1500 words total.
+- Write between 800-1200 words total.
 - Do NOT include a preamble - start directly with the H1 heading.
 """
 
@@ -80,7 +80,7 @@ async def synthesizer_node(state: ResearchState) -> dict:
         response = await generate_content_with_retry(
             model,
             user_message,
-            generation_config=SimpleNamespace(max_output_tokens=6000),
+            generation_config=SimpleNamespace(max_output_tokens=1500),
         )
 
         markdown = response.text.strip()
