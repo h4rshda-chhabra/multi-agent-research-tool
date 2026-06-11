@@ -34,7 +34,7 @@ Guidelines:
 - In the References section at the very end, you MUST provide the footnote definitions in this exact format:
   [^1]: **Authors** (Year). *Title*. DOI: [DOI]. [URL](URL)
   > *"Exact quote extracted from the source passage..."*
-- Write between 800-1200 words total.
+- Write between 600-800 words total.
 - Do NOT include a preamble - start directly with the H1 heading.
 """
 
@@ -87,7 +87,7 @@ async def synthesizer_node(state: ResearchState) -> dict:
         response = await generate_content_with_retry(
             model,
             user_message,
-            generation_config=SimpleNamespace(max_output_tokens=1500),
+            generation_config=SimpleNamespace(max_output_tokens=1000),
         )
 
         markdown = response.text.strip()
