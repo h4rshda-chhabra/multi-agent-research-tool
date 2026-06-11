@@ -104,6 +104,8 @@ async def validator_node(state: ResearchState) -> dict:
             "recency_score": round(recency, 2),
             "technical_depth_score": round(technical_depth, 2),
             "total_score": round(total, 2),
+            "authors": s.get("authors", []),
+            "doi": s.get("doi", ""),
         })
 
     validated.sort(key=lambda x: x["total_score"], reverse=True)

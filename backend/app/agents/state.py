@@ -10,6 +10,8 @@ class SourceResult:
     snippet: str
     published_date: str
     source_type: str  # "web" | "arxiv"
+    authors: list[str] = field(default_factory=list)
+    doi: str = ""
 
 
 @dataclass
@@ -25,6 +27,8 @@ class ValidatedSource:
     recency_score: float
     technical_depth_score: float
     total_score: float
+    authors: list[str] = field(default_factory=list)
+    doi: str = ""
 
 
 @dataclass
@@ -35,7 +39,7 @@ class Finding:
     methodologies: list[str] = field(default_factory=list)
     metrics: list[str] = field(default_factory=list)
     limitations: list[str] = field(default_factory=list)
-    content_excerpt: str = ""
+    exact_quote: str = ""
 
 
 class ResearchState(TypedDict):

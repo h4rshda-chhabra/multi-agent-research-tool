@@ -235,6 +235,8 @@ async def run_research(report_id: str, topic: str, user_id: str) -> None:
                     recency_score=src.get("recency_score", 0.0),
                     technical_depth_score=src.get("technical_depth_score", 0.0),
                     total_score=src.get("total_score", 0.0),
+                    authors="; ".join(src.get("authors", [])),
+                    doi=src.get("doi", ""),
                 )
                 db.add(source)
 

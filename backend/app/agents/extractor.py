@@ -21,7 +21,7 @@ Return ONLY valid JSON — no markdown fences, no extra text:
   "methodologies": ["<method1>", ...],
   "metrics": ["<metric and value>", ...],
   "limitations": ["<limitation>", ...],
-  "content_excerpt": "<2-3 sentence summary>"
+  "exact_quote": "<extract 1-2 key sentences VERBATIM from the text that perfectly captures the main finding>"
 }
 
 If a field has no relevant content, return an empty list.
@@ -64,7 +64,7 @@ async def _extract_one(source: dict, topic: str, model: OpenRouterModel) -> dict
             "methodologies": [],
             "metrics": [],
             "limitations": [],
-            "content_excerpt": source.get("snippet", ""),
+            "exact_quote": source.get("snippet", ""),
         }
 
     try:
@@ -93,7 +93,7 @@ async def _extract_one(source: dict, topic: str, model: OpenRouterModel) -> dict
             "methodologies": [],
             "metrics": [],
             "limitations": [],
-            "content_excerpt": source.get("snippet", ""),
+            "exact_quote": source.get("snippet", ""),
         }
 
 

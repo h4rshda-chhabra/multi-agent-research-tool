@@ -50,6 +50,8 @@ async def _tavily_search(query: str) -> list[SourceResult]:
                     snippet=r.get("content", "")[:500],
                     published_date=r.get("published_date", ""),
                     source_type="web",
+                    authors=[],
+                    doi="",
                 )
             )
         return results
@@ -71,6 +73,8 @@ async def _arxiv_search(query: str) -> list[SourceResult]:
                     snippet=paper.summary[:500],
                     published_date=str(paper.published.date()) if paper.published else "",
                     source_type="arxiv",
+                    authors=[a.name for a in paper.authors],
+                    doi=paper.doi if paper.doi else "",
                 )
             )
         return results

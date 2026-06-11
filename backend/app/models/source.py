@@ -19,6 +19,8 @@ class Source(Base):
     domain: Mapped[str] = mapped_column(String(255), nullable=False)
     snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_date: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    authors: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    doi: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Validator scores (0.0 – 10.0)
     relevance_score: Mapped[float] = mapped_column(Float, default=0.0)

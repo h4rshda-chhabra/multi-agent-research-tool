@@ -29,9 +29,11 @@ Structure the report with these exact sections in order:
 
 Guidelines:
 - Write in a professional, academic tone.
-- Use inline citations like [1], [2], etc., mapped to the References section.
+- You MUST cite EVERY single factual claim using Markdown footnotes (e.g., `[^1]`, `[^2]`).
 - The Comparison Table should compare key approaches, methods, or tools.
-- References section must list all cited sources with their titles and URLs.
+- In the References section at the very end, you MUST provide the footnote definitions in this exact format:
+  [^1]: **Authors** (Year). *Title*. DOI: [DOI]. [URL](URL)
+  > *"Exact quote extracted from the source passage..."*
 - Write between 800-1200 words total.
 - Do NOT include a preamble - start directly with the H1 heading.
 """
@@ -54,7 +56,10 @@ async def synthesizer_node(state: ResearchState) -> dict:
 
     refs = []
     for i, s in enumerate(validated_sources, 1):
-        refs.append(f"[{i}] {s['title']} - {s['url']}")
+        author_str = ", ".join(s.get("authors", [])) if s.get("authors") else "Unknown Authors"
+        year = s.get("published_date", "")[:4] if s.get("published_date") else "n.d."
+        doi_str = f"DOI: {s.get('doi')}" if s.get("doi") else ""
+        refs.append(f"Source {i}: {author_str} ({year}). {s['title']}. {doi_str} {s['url']}")
 
     findings_text = ""
     for f in findings:
@@ -67,6 +72,8 @@ async def synthesizer_node(state: ResearchState) -> dict:
             findings_text += "Metrics:\n" + "\n".join(f"- {m}" for m in f["metrics"]) + "\n"
         if f.get("limitations"):
             findings_text += "Limitations:\n" + "\n".join(f"- {l}" for l in f["limitations"]) + "\n"
+        if f.get("exact_quote"):
+            findings_text += f"Exact Source Quote:\n> \"{f['exact_quote']}\"\n"
 
     user_message = (
         f"Topic: {state['topic']}\n"
