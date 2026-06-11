@@ -47,7 +47,7 @@ async def synthesizer_node(state: ResearchState) -> dict:
     log.info("synthesizer_start")
 
     model = OpenRouterModel(
-        model_name=settings.OPENROUTER_MODEL,
+        model_name=state.get("model", settings.OPENROUTER_MODEL),
         system_instruction=SYNTHESIZER_SYSTEM.format(topic=state["topic"]),
     )
 

@@ -19,6 +19,7 @@ from app.database import AsyncSessionLocal
 from app.models.agent_run import AgentRun
 from app.models.report import Report
 from app.models.source import Source
+from app.config import get_settings
 
 logger = structlog.get_logger()
 
@@ -106,7 +107,7 @@ async def _emit(queue: asyncio.Queue, event: dict) -> None:
     await queue.put(event)
 
 
-async def run_research(report_id: str, topic: str, user_id: str) -> None:
+async def run_research(report_id: str, topic: str, user_id: str, model: str | None = None) -> None:
     """Background task: run the LangGraph pipeline and stream SSE progress events."""
     queue = get_or_create_queue(report_id)
     cancel_event = asyncio.Event()
@@ -119,6 +120,7 @@ async def run_research(report_id: str, topic: str, user_id: str) -> None:
             "report_id": report_id,
             "user_id": user_id,
             "topic": topic,
+            "model": model or get_settings().OPENROUTER_MODEL,
             "queries": [],
             "subtopics": [],
             "research_direction": "",

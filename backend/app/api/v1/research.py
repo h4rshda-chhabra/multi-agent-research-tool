@@ -41,7 +41,7 @@ async def start_research(
         logger.error("Failed to create research report", error=str(e), exc_info=True)
         raise HTTPException(status_code=503, detail="Database is temporarily unavailable")
 
-    background_tasks.add_task(run_research, report.id, body.topic, current_user.id)
+    background_tasks.add_task(run_research, report.id, body.topic, current_user.id, body.model)
 
     return ResearchStartResponse(
         report_id=report.id,

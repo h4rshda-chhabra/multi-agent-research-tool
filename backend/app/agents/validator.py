@@ -50,7 +50,7 @@ async def validator_node(state: ResearchState) -> dict:
 
     # Configuration handled by OpenRouterModel
     model = OpenRouterModel(
-        model_name=settings.OPENROUTER_MODEL,
+        model_name=state.get("model", settings.OPENROUTER_MODEL),
         system_instruction=VALIDATOR_SYSTEM,
     )
 

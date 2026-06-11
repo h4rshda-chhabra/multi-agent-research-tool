@@ -94,8 +94,8 @@ export async function registerApi(name: string, email: string, password: string)
 
 // ─── Research ────────────────────────────────────────────────────────────────
 
-export async function startResearch(topic: string): Promise<{ report_id: string; status: string }> {
-  const { data } = await apiClient.post("/research", { topic });
+export async function startResearch(topic: string, model?: string): Promise<{ report_id: string; status: string }> {
+  const { data } = await apiClient.post("/research", { topic, model });
   return data;
 }
 

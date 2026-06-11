@@ -109,7 +109,7 @@ async def extractor_node(state: ResearchState) -> dict:
         return {"error": "No validated sources", "current_agent": "extractor"}
 
     model = OpenRouterModel(
-        model_name=settings.OPENROUTER_MODEL,
+        model_name=state.get("model", settings.OPENROUTER_MODEL),
         system_instruction=EXTRACTOR_SYSTEM,
     )
 

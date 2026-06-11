@@ -4,6 +4,7 @@ from typing import Optional
 
 class ResearchRequest(BaseModel):
     topic: str
+    model: Optional[str] = None
 
     @field_validator("topic")
     @classmethod

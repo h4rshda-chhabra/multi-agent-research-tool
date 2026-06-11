@@ -16,7 +16,7 @@ import {
 export function useStartResearch() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (topic: string) => startResearch(topic),
+    mutationFn: ({ topic, model }: { topic: string; model?: string }) => startResearch(topic, model),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
     onError: () => toast.error("Failed to start research"),
   });

@@ -15,9 +15,18 @@ const SUGGESTIONS = [
   "Graph Neural Networks applications",
 ];
 
+const MODELS = [
+  { id: "", name: "Default Model (Qwen Coder)" },
+  { id: "google/gemma-2-9b-it:free", name: "Gemma 2 9B (Free)" },
+  { id: "meta-llama/llama-3-8b-instruct:free", name: "Llama 3 8B (Free)" },
+  { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B (Free)" },
+  { id: "qwen/qwen-2.5-coder-32b-instruct:free", name: "Qwen 2.5 Coder (Free)" },
+];
+
 export function ResearchInput() {
   const router = useRouter();
   const [topic, setTopic] = useState("");
+  const [model, setModel] = useState("");
   const { mutateAsync: start, isPending } = useStartResearch();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -28,7 +37,7 @@ export function ResearchInput() {
       return;
     }
     try {
-      const { report_id } = await start(trimmed);
+      const { report_id } = await start({ topic: trimmed, model: model || undefined });
       router.push(`/research/${report_id}`);
     } catch {
       // onError in useStartResearch already shows a toast; swallow the rejection
@@ -78,6 +87,19 @@ export function ResearchInput() {
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {isPending ? "Starting…" : "Research"}
           </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <span className="text-sm text-slate-400">AI Model:</span>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="bg-slate-800/80 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500 transition cursor-pointer"
+          >
+            {MODELS.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
         </div>
       </motion.form>
 

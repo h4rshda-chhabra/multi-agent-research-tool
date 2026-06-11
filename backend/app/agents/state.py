@@ -46,6 +46,7 @@ class ResearchState(TypedDict):
     report_id: str
     user_id: str
     topic: str
+    model: str
 
     # Planner outputs
     queries: list[str]
