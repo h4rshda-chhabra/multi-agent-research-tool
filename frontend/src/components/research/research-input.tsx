@@ -16,11 +16,11 @@ const SUGGESTIONS = [
 ];
 
 const MODELS = [
-  { id: "", name: "Default Model (Qwen Coder)" },
-  { id: "google/gemma-2-9b-it:free", name: "Gemma 2 9B (Free)" },
-  { id: "meta-llama/llama-3-8b-instruct:free", name: "Llama 3 8B (Free)" },
+  { id: "", name: "Default (Llama 3.3 70B Free)" },
+  { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B (Free)" },
+  { id: "meta-llama/llama-3.2-3b-instruct:free", name: "Llama 3.2 3B (Free)" },
   { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B (Free)" },
-  { id: "qwen/qwen-2.5-coder-32b-instruct:free", name: "Qwen 2.5 Coder (Free)" },
+  { id: "qwen/qwen3-coder:free", name: "Qwen 3 Coder (Free)" },
 ];
 
 export function ResearchInput() {
