@@ -1,15 +1,12 @@
 # backend/app/agents/openrouter_client.py
-"""Shared OpenRouter client wrapper.
+"""Unified model client.
 
-Provides an interface compatible with the existing ``generate_content_with_retry``
-utility, which expects a model object exposing an async ``generate_content_async``
-method returning an object with a ``.text`` attribute (mirroring the old Gemini API).
+Routes requests to either:
+  - Google Generative AI SDK  (model names starting with "gemini")
+  - OpenRouter via OpenAI SDK (everything else)
 
-Uses the openai>=1.0 ``AsyncOpenAI`` client pointed at the OpenRouter endpoint.
-
-NOTE: openai 1.35.0 forwards a ``proxies`` kwarg to httpx, which httpx>=0.28 removed.
-We sidestep that by supplying our own ``httpx.AsyncClient`` so openai never builds its
-internal wrapper with the unsupported argument.
+Both expose the same generate_content_async / .text interface so agent
+files need no changes when the default model changes.
 """
 
 import structlog
@@ -22,55 +19,88 @@ from app.config import get_settings
 
 logger = structlog.get_logger()
 
-_client: Optional[AsyncOpenAI] = None
+# --- OpenRouter client (lazy singleton) ---
+_openrouter_client: Optional[AsyncOpenAI] = None
 
 
-def _get_client() -> AsyncOpenAI:
-    """Lazily build a single shared AsyncOpenAI client for OpenRouter."""
-    global _client
-    if _client is None:
+def _get_openrouter_client() -> AsyncOpenAI:
+    global _openrouter_client
+    if _openrouter_client is None:
         settings = get_settings()
-        _client = AsyncOpenAI(
+        _openrouter_client = AsyncOpenAI(
             api_key=settings.OPENROUTER_API_KEY,
-            base_url=getattr(
-                settings, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
-            ),
+            base_url=getattr(settings, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
             http_client=httpx.AsyncClient(timeout=httpx.Timeout(120.0)),
         )
-    return _client
+    return _openrouter_client
+
+
+# --- Gemini client (lazy configure) ---
+_gemini_configured = False
+
+
+def _ensure_gemini():
+    global _gemini_configured
+    if not _gemini_configured:
+        import google.generativeai as genai
+        settings = get_settings()
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        _gemini_configured = True
 
 
 class OpenRouterResponse:
-    """Simple response wrapper mimicking Gemini's response API used in the code base."""
-
+    """Minimal response wrapper; mirrors Gemini's response.text API."""
     def __init__(self, text: str):
         self.text = text
 
 
 class OpenRouterModel:
-    """Thin wrapper around the OpenAI-compatible OpenRouter chat completions API.
+    """Unified model wrapper.
 
-    Parameters
-    ----------
-    model_name: str
-        The model identifier, e.g. ``anthropic/claude-3.5-sonnet``.
-    system_instruction: str
-        System prompt supplied to the model.
+    Pass any model name:
+      - "gemini-2.0-flash", "gemini-1.5-flash", etc. → Google AI SDK (free tier)
+      - "meta-llama/...", "google/gemma-...", etc.    → OpenRouter
     """
 
     def __init__(self, *, model_name: str, system_instruction: str):
         self.model_name = model_name
         self.system_instruction = system_instruction
+        self._use_gemini = model_name.startswith("gemini")
 
     async def generate_content_async(
         self, user_prompt: str, *, generation_config: Optional[object] = None
     ) -> OpenRouterResponse:
-        """Generate content using OpenRouter.
+        if self._use_gemini:
+            return await self._gemini_call(user_prompt, generation_config)
+        return await self._openrouter_call(user_prompt, generation_config)
 
-        The ``generation_config`` argument mirrors the Gemini config used elsewhere.
-        ``max_output_tokens`` maps to ``max_tokens``; ``response_mime_type ==
-        "application/json"`` maps to OpenRouter's JSON ``response_format``.
-        """
+    # ------------------------------------------------------------------
+    async def _gemini_call(self, user_prompt: str, generation_config) -> OpenRouterResponse:
+        import google.generativeai as genai
+        from google.generativeai.types import GenerationConfig
+
+        _ensure_gemini()
+
+        gc = None
+        if generation_config is not None:
+            gc = GenerationConfig(
+                max_output_tokens=getattr(generation_config, "max_output_tokens", None),
+                response_mime_type=getattr(generation_config, "response_mime_type", None),
+            )
+
+        model = genai.GenerativeModel(
+            self.model_name,
+            system_instruction=self.system_instruction,
+        )
+        try:
+            response = await model.generate_content_async(user_prompt, generation_config=gc)
+            return OpenRouterResponse(text=response.text)
+        except Exception as exc:
+            logger.error("gemini_error", model=self.model_name, error=str(exc))
+            raise
+
+    # ------------------------------------------------------------------
+    async def _openrouter_call(self, user_prompt: str, generation_config) -> OpenRouterResponse:
         max_tokens = getattr(generation_config, "max_output_tokens", None)
         mime_type = getattr(generation_config, "response_mime_type", None)
 
@@ -87,7 +117,7 @@ class OpenRouterModel:
             kwargs["response_format"] = {"type": "json_object"}
 
         try:
-            response = await _get_client().chat.completions.create(**kwargs)
+            response = await _get_openrouter_client().chat.completions.create(**kwargs)
             content = response.choices[0].message.content or ""
             return OpenRouterResponse(text=content)
         except Exception as exc:
