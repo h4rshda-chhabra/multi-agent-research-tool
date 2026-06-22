@@ -35,12 +35,23 @@ async def create_tables() -> None:
         await conn.run_sync(Base.metadata.create_all)
         
         from sqlalchemy import text
-        try:
-            await conn.execute(text("ALTER TABLE sources ADD COLUMN authors VARCHAR(1000)"))
-        except Exception:
-            pass
+        # ADD missing columns (no-op if already present)
+        for stmt in [
+            "ALTER TABLE sources ADD COLUMN authors TEXT",
+            "ALTER TABLE sources ADD COLUMN doi VARCHAR(255)",
+        ]:
+            try:
+                await conn.execute(text(stmt))
+            except Exception:
+                pass
 
-        try:
-            await conn.execute(text("ALTER TABLE sources ADD COLUMN doi VARCHAR(255)"))
-        except Exception:
-            pass
+        # Widen VARCHAR columns to TEXT on PostgreSQL (no-op on SQLite)
+        if not settings.is_sqlite:
+            for stmt in [
+                "ALTER TABLE sources ALTER COLUMN authors TYPE TEXT",
+                "ALTER TABLE sources ALTER COLUMN title TYPE TEXT",
+            ]:
+                try:
+                    await conn.execute(text(stmt))
+                except Exception:
+                    pass

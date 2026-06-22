@@ -15,11 +15,11 @@ class Source(Base):
         String(36), ForeignKey("reports.id", ondelete="CASCADE"), nullable=False, index=True
     )
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
-    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     domain: Mapped[str] = mapped_column(String(255), nullable=False)
     snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_date: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    authors: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    authors: Mapped[str | None] = mapped_column(Text, nullable=True)
     doi: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Validator scores (0.0 – 10.0)
