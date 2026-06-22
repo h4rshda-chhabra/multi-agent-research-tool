@@ -16,7 +16,7 @@ export interface AuthToken {
 
 export type ReportStatus = "pending" | "running" | "complete" | "failed" | "cancelled";
 
-export type AgentName = "planner" | "search" | "validator" | "extractor" | "synthesizer";
+export type AgentName = "planner" | "search" | "validator" | "extractor" | "synthesizer" | "insights";
 
 export type AgentStatus = "idle" | "running" | "complete" | "error";
 

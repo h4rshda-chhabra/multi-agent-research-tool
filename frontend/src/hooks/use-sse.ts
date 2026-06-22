@@ -12,6 +12,7 @@ const AGENT_STEPS: AgentStep[] = [
   { name: "validator", label: "Validating Source Quality", status: "idle" },
   { name: "extractor", label: "Extracting Key Findings", status: "idle" },
   { name: "synthesizer", label: "Synthesizing Report", status: "idle" },
+  { name: "insights", label: "Generating Insights", status: "idle" },
 ];
 
 function freshSteps(): AgentStep[] {
@@ -160,7 +161,7 @@ export function useSSE(reportId: string | null) {
 }
 
 function getNextAgent(current: AgentName): AgentName | null {
-  const order: AgentName[] = ["planner", "search", "validator", "extractor", "synthesizer"];
+  const order: AgentName[] = ["planner", "search", "validator", "extractor", "synthesizer", "insights"];
   const idx = order.indexOf(current);
   return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : null;
 }

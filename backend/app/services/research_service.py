@@ -29,8 +29,11 @@ _progress_queues: dict[str, asyncio.Queue] = {}
 # Cancellation signals: report_id → asyncio.Event
 _cancel_events: dict[str, asyncio.Event] = {}
 
+# Active research runs (cleared on finish/error/cancel)
+_active_runs: set[str] = set()
+
 # Canonical pipeline order (must match graph.py)
-AGENT_ORDER = ["planner", "search", "validator", "extractor", "synthesizer"]
+AGENT_ORDER = ["planner", "search", "validator", "extractor", "synthesizer", "insights"]
 
 AGENT_LABELS = {
     "planner": "Planning Research Strategy",
@@ -38,6 +41,7 @@ AGENT_LABELS = {
     "validator": "Validating Sources",
     "extractor": "Extracting Findings",
     "synthesizer": "Generating Report",
+    "insights": "Generating Insights",
 }
 
 
@@ -112,6 +116,7 @@ async def run_research(report_id: str, topic: str, user_id: str, model: str | No
     queue = get_or_create_queue(report_id)
     cancel_event = asyncio.Event()
     _cancel_events[report_id] = cancel_event
+    _active_runs.add(report_id)
     log = logger.bind(report_id=report_id)
     log.info("research_start", topic=topic)
 
@@ -264,6 +269,7 @@ async def run_research(report_id: str, topic: str, user_id: str, model: str | No
                     report.error_message = str(exc)
                     await db2.commit()
         finally:
+            _active_runs.discard(report_id)
             # Give the SSE consumer time to drain the terminal event before
             # we destroy the queue. The StreamingResponse generator breaks its
             # loop on complete/error/cancelled, so 5 s is ample.
@@ -275,6 +281,12 @@ async def run_research(report_id: str, topic: str, user_id: str, model: str | No
 
 async def stream_progress(report_id: str) -> AsyncGenerator[str, None]:
     """SSE generator: yields data: {...}\n\n until complete/error."""
+    # If no active run exists for this report it's already done — tell the
+    # frontend immediately so the optimistic "planner running" state clears.
+    if report_id not in _active_runs:
+        yield f"data: {json.dumps({'type': 'complete', 'message': 'Report ready', 'report_id': report_id})}\n\n"
+        return
+
     queue = get_or_create_queue(report_id)
     try:
         while True:
