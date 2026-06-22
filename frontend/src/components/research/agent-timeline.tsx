@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain,
@@ -7,6 +8,7 @@ import {
   ShieldCheck,
   FileSearch,
   BookOpen,
+  Lightbulb,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -14,12 +16,13 @@ import {
 import { cn } from "@/lib/utils";
 import type { AgentStep } from "@/types";
 
-const AGENT_ICONS = {
+const AGENT_ICONS: Record<string, React.ElementType> = {
   planner: Brain,
   search: Search,
   validator: ShieldCheck,
   extractor: FileSearch,
   synthesizer: BookOpen,
+  insights: Lightbulb,
 };
 
 interface Props {
