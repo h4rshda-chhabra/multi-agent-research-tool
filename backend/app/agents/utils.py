@@ -3,11 +3,23 @@ import structlog
 
 logger = structlog.get_logger()
 
-async def generate_content_with_retry(model, *args, max_retries=5, initial_delay=6, **kwargs):
+def _parse_retry_after(exc) -> float | None:
+    """Extract retry_after_seconds from an OpenRouter 429 error body, if present."""
+    try:
+        body = getattr(exc, "body", None) or {}
+        if isinstance(body, dict):
+            metadata = body.get("error", {}).get("metadata", {})
+            val = metadata.get("retry_after_seconds")
+            if val is not None:
+                return float(val)
+    except Exception:
+        pass
+    return None
+
+async def generate_content_with_retry(model, *args, max_retries=5, initial_delay=35, **kwargs):
     """
-    Wrapper around Gemini's generate_content_async that automatically handles
-    ResourceExhausted (429) rate limit and quota exceeded errors using
-    exponential backoff.
+    Retry wrapper for OpenRouter / Gemini model calls.
+    Handles 429 rate-limit errors with backoff; respects Retry-After when present.
     """
     delay = initial_delay
     for attempt in range(1, max_retries + 1):
@@ -15,19 +27,26 @@ async def generate_content_with_retry(model, *args, max_retries=5, initial_delay
             return await model.generate_content_async(*args, **kwargs)
         except Exception as exc:
             exc_str = str(exc)
-            # Detect 429 rate limit or quota exceeded errors
-            is_rate_limit = "429" in exc_str or "Quota exceeded" in exc_str or "ResourceExhausted" in exc_str or "rate limit" in exc_str.lower()
-            
+            is_rate_limit = (
+                "429" in exc_str
+                or "Quota exceeded" in exc_str
+                or "ResourceExhausted" in exc_str
+                or "rate limit" in exc_str.lower()
+                or "rate-limited" in exc_str.lower()
+            )
+
             if is_rate_limit and attempt < max_retries:
+                # Honour the provider's Retry-After if available, else use backoff
+                retry_after = _parse_retry_after(exc)
+                wait = max(retry_after + 2, delay) if retry_after else delay
                 logger.warning(
-                    "gemini_rate_limit_hit",
+                    "rate_limit_hit",
                     attempt=attempt,
                     max_retries=max_retries,
-                    retry_delay_seconds=delay,
-                    error_preview=exc_str[:150]
+                    retry_delay_seconds=wait,
+                    error_preview=exc_str[:200],
                 )
-                await asyncio.sleep(delay)
-                delay *= 2  # Exponential backoff (6s, 12s, 24s, 48s)
+                await asyncio.sleep(wait)
+                delay = wait * 2
             else:
-                # Re-raise the exception if not a 429, or if we have exhausted all retry attempts
                 raise exc

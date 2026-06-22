@@ -16,7 +16,7 @@ const SUGGESTIONS = [
 ];
 
 const MODELS = [
-  { id: "", name: "Default (Llama 3.3 70B Free)" },
+  { id: "", name: "Default (Gemma 4 31B Free)" },
   { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B (Free)" },
   { id: "meta-llama/llama-3.2-3b-instruct:free", name: "Llama 3.2 3B (Free)" },
   { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B (Free)" },
