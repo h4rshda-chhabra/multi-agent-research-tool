@@ -9,18 +9,24 @@ logger = structlog.get_logger()
 def extract_json(raw: str) -> dict:
     """Parse JSON from a model response, tolerating markdown fences and surrounding text."""
     text = raw.strip()
-    # Strip any ```json ... ``` or ``` ... ``` fences
+    # Strip markdown fences
     text = re.sub(r'^```(?:json)?\s*', '', text)
     text = re.sub(r'\s*```\s*$', '', text.strip())
-    # Try direct parse
+    # Try direct parse first (fast path)
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
-    # Fall back: grab the first {...} block (handles leading/trailing prose)
-    match = re.search(r'\{.*\}', text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
+    # Use raw_decode to find and parse the first valid JSON object in the text,
+    # ignoring any leading prose or trailing content after the closing brace.
+    decoder = json.JSONDecoder()
+    idx = text.find('{')
+    while idx != -1:
+        try:
+            data, _ = decoder.raw_decode(text, idx)
+            return data
+        except json.JSONDecodeError:
+            idx = text.find('{', idx + 1)
     raise ValueError(f"No JSON object found in model response: {text[:200]}")
 
 def _parse_retry_after(exc) -> float | None:

@@ -88,9 +88,13 @@ class OpenRouterModel:
         }
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
-        # response_format / json_object mode is intentionally omitted — not all
-        # models support it and it causes 400 errors. Agents enforce JSON output
-        # via system prompts + markdown stripping.
+        # Gemini's OpenAI-compat endpoint supports response_format; enforce JSON
+        # when the caller requests it. Skip for OpenRouter — not all free models
+        # support it and it causes 400 errors.
+        if self._use_gemini:
+            mime = getattr(generation_config, "response_mime_type", None)
+            if mime == "application/json":
+                kwargs["response_format"] = {"type": "json_object"}
 
         import openai as _openai
         try:
