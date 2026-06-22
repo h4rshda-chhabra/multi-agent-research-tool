@@ -70,7 +70,7 @@ async def _extract_one(source: dict, topic: str, model: OpenRouterModel) -> dict
         response = await generate_content_with_retry(
             model,
             f"Topic: {topic}\n\nSource: {source['title']}\nContent:\n{content}",
-            generation_config=SimpleNamespace(max_output_tokens=512, response_mime_type="application/json"),
+            generation_config=SimpleNamespace(max_output_tokens=1024, response_mime_type="application/json"),
         )
         data = extract_json(response.text)
         return {

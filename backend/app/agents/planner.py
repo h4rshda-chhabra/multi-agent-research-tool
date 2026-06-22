@@ -42,7 +42,7 @@ async def planner_node(state: ResearchState) -> dict:
             model,
             f"Research topic: {state['topic']}",
             generation_config=SimpleNamespace(
-                max_output_tokens=512,
+                max_output_tokens=1024,
                 response_mime_type="application/json",
             ),
         )
