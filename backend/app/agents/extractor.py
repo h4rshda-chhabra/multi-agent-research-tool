@@ -1,5 +1,4 @@
 import asyncio
-import json
 import structlog
 import httpx
 from types import SimpleNamespace
@@ -8,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from app.config import get_settings
 from app.agents.state import ResearchState
-from app.agents.utils import generate_content_with_retry
+from app.agents.utils import generate_content_with_retry, extract_json
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -73,12 +72,7 @@ async def _extract_one(source: dict, topic: str, model: OpenRouterModel) -> dict
             f"Topic: {topic}\n\nSource: {source['title']}\nContent:\n{content}",
             generation_config=SimpleNamespace(max_output_tokens=512, response_mime_type="application/json"),
         )
-        raw = response.text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        data = json.loads(raw)
+        data = extract_json(response.text)
         return {
             "source_url": source["url"],
             "source_title": source["title"],

@@ -24,9 +24,11 @@ class Settings(BaseSettings):
             return v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
 
-    # Existing keys
     GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY_2: str = ""
+
     TAVILY_API_KEY: str = ""
+    TAVILY_API_KEY_2: str = ""
 
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_MODEL: str = "gemini-2.5-flash"
@@ -47,14 +49,20 @@ class Settings(BaseSettings):
         return self.APP_ENV == "production"
 
     @property
+    def tavily_keys(self) -> list[str]:
+        return [k for k in [self.TAVILY_API_KEY, self.TAVILY_API_KEY_2] if k]
+
+    @property
+    def gemini_keys(self) -> list[str]:
+        return [k for k in [self.GEMINI_API_KEY, self.GEMINI_API_KEY_2] if k]
+
+    @property
     def missing_keys(self) -> list[str]:
         missing = []
-        if not self.GEMINI_API_KEY or self.GEMINI_API_KEY.startswith("AIza..."):
+        if not self.GEMINI_API_KEY:
             missing.append("GEMINI_API_KEY")
-        if not self.TAVILY_API_KEY or self.TAVILY_API_KEY.startswith("tvly-..."):
+        if not self.TAVILY_API_KEY:
             missing.append("TAVILY_API_KEY")
-        if not self.OPENROUTER_API_KEY:
-            missing.append("OPENROUTER_API_KEY")
         return missing
 
 @lru_cache

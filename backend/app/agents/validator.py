@@ -1,11 +1,10 @@
-import json
 import structlog
 from types import SimpleNamespace
 from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
-from app.agents.utils import generate_content_with_retry
+from app.agents.utils import generate_content_with_retry, extract_json
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -66,12 +65,7 @@ async def validator_node(state: ResearchState) -> dict:
             generation_config=SimpleNamespace(max_output_tokens=2048, response_mime_type="application/json"),
         )
 
-        raw = response.text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        data = json.loads(raw)
+        data = extract_json(response.text)
         score_map: dict[str, dict] = {item["url"]: item for item in data.get("scores", [])}
 
     except Exception as exc:

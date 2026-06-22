@@ -29,9 +29,9 @@ def _domain(url: str) -> str:
         return ""
 
 
-async def _tavily_search(query: str) -> list[SourceResult]:
+async def _tavily_search(query: str, api_key: str | None = None) -> list[SourceResult]:
     try:
-        client = TavilyClient(api_key=settings.TAVILY_API_KEY)
+        client = TavilyClient(api_key=api_key or settings.TAVILY_API_KEY)
         response = await asyncio.to_thread(
             client.search,
             query=query,
@@ -94,10 +94,12 @@ async def search_node(state: ResearchState) -> dict:
     if not queries:
         return {"error": "No queries from planner", "current_agent": "search"}
 
-    # Run all queries concurrently
+    # Run all queries concurrently; rotate Tavily keys across queries
+    tavily_keys = settings.tavily_keys
     tasks = []
-    for q in queries:
-        tasks.append(_tavily_search(q))
+    for i, q in enumerate(queries):
+        key = tavily_keys[i % len(tavily_keys)]
+        tasks.append(_tavily_search(q, api_key=key))
         tasks.append(_arxiv_search(q))
 
     all_results = await asyncio.gather(*tasks)

@@ -1,4 +1,3 @@
-import json
 import structlog
 from types import SimpleNamespace
 # OpenRouter integration
@@ -6,7 +5,7 @@ from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
-from app.agents.utils import generate_content_with_retry
+from app.agents.utils import generate_content_with_retry, extract_json
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -48,13 +47,7 @@ async def planner_node(state: ResearchState) -> dict:
             ),
         )
 
-        raw = response.text.strip()
-        # Strip markdown fences if model adds them anyway
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        data = json.loads(raw)
+        data = extract_json(response.text)
 
         log.info("planner_complete", queries=len(data.get("queries", [])))
         return {

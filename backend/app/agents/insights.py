@@ -1,10 +1,10 @@
-import json
 import structlog
 from types import SimpleNamespace
 from app.agents.openrouter_client import OpenRouterModel
 
 from app.config import get_settings
 from app.agents.state import ResearchState
+from app.agents.utils import extract_json
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -143,13 +143,7 @@ Generate comprehensive research insights for this topic based strictly on the ab
             generation_config=SimpleNamespace(max_output_tokens=8192, response_mime_type="application/json"),
         )
 
-        raw = response.text.strip()
-        # Strip markdown fences if model adds them anyway
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        data = json.loads(raw)
+        data = extract_json(response.text)
 
         log.info("insights_complete", keys=list(data.keys()))
         return {

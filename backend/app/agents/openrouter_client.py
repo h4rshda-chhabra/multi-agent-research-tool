@@ -22,8 +22,8 @@ logger = structlog.get_logger()
 # --- OpenRouter client (lazy singleton) ---
 _openrouter_client: Optional[AsyncOpenAI] = None
 
-# --- Gemini OpenAI-compatible client (lazy singleton) ---
-_gemini_client: Optional[AsyncOpenAI] = None
+# --- Gemini OpenAI-compatible clients (lazy singletons per key index) ---
+_gemini_clients: dict[int, AsyncOpenAI] = {}
 
 
 def _get_openrouter_client() -> AsyncOpenAI:
@@ -38,16 +38,19 @@ def _get_openrouter_client() -> AsyncOpenAI:
     return _openrouter_client
 
 
-def _get_gemini_client() -> AsyncOpenAI:
-    global _gemini_client
-    if _gemini_client is None:
+def _get_gemini_client(key_index: int = 0) -> AsyncOpenAI:
+    if key_index not in _gemini_clients:
         settings = get_settings()
-        _gemini_client = AsyncOpenAI(
-            api_key=settings.GEMINI_API_KEY,
+        keys = settings.gemini_keys
+        if not keys:
+            raise ValueError("No GEMINI_API_KEY configured")
+        api_key = keys[key_index % len(keys)]
+        _gemini_clients[key_index] = AsyncOpenAI(
+            api_key=api_key,
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
             http_client=httpx.AsyncClient(timeout=httpx.Timeout(120.0)),
         )
-    return _gemini_client
+    return _gemini_clients[key_index]
 
 
 class OpenRouterResponse:
@@ -89,13 +92,21 @@ class OpenRouterModel:
         # models support it and it causes 400 errors. Agents enforce JSON output
         # via system prompts + markdown stripping.
 
+        import openai as _openai
         try:
             response = await client.chat.completions.create(**kwargs)
             content = response.choices[0].message.content or ""
             return OpenRouterResponse(text=content)
+        except _openai.RateLimitError:
+            if self._use_gemini:
+                logger.warning("gemini_rate_limit_key1", model=self.model_name, fallback="key2")
+                client2 = _get_gemini_client(key_index=1)
+                response = await client2.chat.completions.create(**kwargs)
+                content = response.choices[0].message.content or ""
+                return OpenRouterResponse(text=content)
+            raise
         except Exception as exc:
-            import openai
-            if isinstance(exc, (openai.AuthenticationError, openai.PermissionDeniedError)):
+            if isinstance(exc, (_openai.AuthenticationError, _openai.PermissionDeniedError)):
                 provider = "Gemini" if self._use_gemini else "OpenRouter"
                 logger.error(f"{provider.lower()}_auth_error", model=self.model_name, error=str(exc))
                 raise ValueError(f"{provider} Authentication Failed: {str(exc)}") from exc

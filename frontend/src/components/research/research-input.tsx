@@ -15,18 +15,9 @@ const SUGGESTIONS = [
   "Graph Neural Networks applications",
 ];
 
-const MODELS = [
-  { id: "", name: "Default (Gemini 2.5 Flash)" },
-  { id: "google/gemma-4-31b-it:free", name: "Gemma 4 31B (Free)" },
-  { id: "meta-llama/llama-3.2-3b-instruct:free", name: "Llama 3.2 3B (Free)" },
-  { id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama 3.3 70B (Free)" },
-  { id: "qwen/qwen3-coder:free", name: "Qwen 3 Coder (Free)" },
-];
-
 export function ResearchInput() {
   const router = useRouter();
   const [topic, setTopic] = useState("");
-  const [model, setModel] = useState("");
   const { mutateAsync: start, isPending } = useStartResearch();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,7 +28,7 @@ export function ResearchInput() {
       return;
     }
     try {
-      const { report_id } = await start({ topic: trimmed, model: model || undefined });
+      const { report_id } = await start({ topic: trimmed });
       router.push(`/research/${report_id}`);
     } catch {
       // onError in useStartResearch already shows a toast; swallow the rejection
@@ -89,18 +80,6 @@ export function ResearchInput() {
           </button>
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <span className="text-sm text-slate-400">AI Model:</span>
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="bg-slate-800/80 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-brand-500 transition cursor-pointer"
-          >
-            {MODELS.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-        </div>
       </motion.form>
 
       <motion.div
