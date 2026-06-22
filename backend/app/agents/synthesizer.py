@@ -87,7 +87,7 @@ async def synthesizer_node(state: ResearchState) -> dict:
         response = await generate_content_with_retry(
             model,
             user_message,
-            generation_config=SimpleNamespace(max_output_tokens=1000),
+            generation_config=SimpleNamespace(max_output_tokens=4096),
         )
 
         markdown = response.text.strip()
