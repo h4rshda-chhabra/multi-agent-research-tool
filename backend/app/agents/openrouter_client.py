@@ -102,7 +102,6 @@ class OpenRouterModel:
     # ------------------------------------------------------------------
     async def _openrouter_call(self, user_prompt: str, generation_config) -> OpenRouterResponse:
         max_tokens = getattr(generation_config, "max_output_tokens", None)
-        mime_type = getattr(generation_config, "response_mime_type", None)
 
         kwargs: dict = {
             "model": self.model_name,
@@ -113,8 +112,9 @@ class OpenRouterModel:
         }
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
-        if mime_type == "application/json":
-            kwargs["response_format"] = {"type": "json_object"}
+        # response_format / json_object mode is intentionally omitted — not all
+        # free OpenRouter models support it and it causes 400 errors. Agents
+        # already enforce JSON output via system prompts + markdown stripping.
 
         try:
             response = await _get_openrouter_client().chat.completions.create(**kwargs)

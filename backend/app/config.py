@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = ""
 
     OPENROUTER_API_KEY: str = ""
-    OPENROUTER_MODEL: str = "gemini-2.0-flash"
+    OPENROUTER_MODEL: str = "gemini-1.5-flash"
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     FRONTEND_URL: str = "http://localhost:3001"
