@@ -2,11 +2,11 @@
 """Unified model client.
 
 Routes requests to either:
-  - Google Generative AI SDK  (model names starting with "gemini")
+  - Gemini via its OpenAI-compatible endpoint (model names starting with "gemini")
   - OpenRouter via OpenAI SDK (everything else)
 
-Both expose the same generate_content_async / .text interface so agent
-files need no changes when the default model changes.
+Both use the same openai.AsyncOpenAI interface so switching models requires
+no changes in agent files.
 """
 
 import structlog
@@ -22,6 +22,9 @@ logger = structlog.get_logger()
 # --- OpenRouter client (lazy singleton) ---
 _openrouter_client: Optional[AsyncOpenAI] = None
 
+# --- Gemini OpenAI-compatible client (lazy singleton) ---
+_gemini_client: Optional[AsyncOpenAI] = None
+
 
 def _get_openrouter_client() -> AsyncOpenAI:
     global _openrouter_client
@@ -35,17 +38,16 @@ def _get_openrouter_client() -> AsyncOpenAI:
     return _openrouter_client
 
 
-# --- Gemini client (lazy configure) ---
-_gemini_configured = False
-
-
-def _ensure_gemini():
-    global _gemini_configured
-    if not _gemini_configured:
-        import google.generativeai as genai
+def _get_gemini_client() -> AsyncOpenAI:
+    global _gemini_client
+    if _gemini_client is None:
         settings = get_settings()
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        _gemini_configured = True
+        _gemini_client = AsyncOpenAI(
+            api_key=settings.GEMINI_API_KEY,
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            http_client=httpx.AsyncClient(timeout=httpx.Timeout(120.0)),
+        )
+    return _gemini_client
 
 
 class OpenRouterResponse:
@@ -58,7 +60,7 @@ class OpenRouterModel:
     """Unified model wrapper.
 
     Pass any model name:
-      - "gemini-2.0-flash", "gemini-1.5-flash", etc. → Google AI SDK (free tier)
+      - "gemini-2.5-flash", "gemini-2.0-flash", etc. → Gemini OpenAI-compatible endpoint
       - "meta-llama/...", "google/gemma-...", etc.    → OpenRouter
     """
 
@@ -70,38 +72,9 @@ class OpenRouterModel:
     async def generate_content_async(
         self, user_prompt: str, *, generation_config: Optional[object] = None
     ) -> OpenRouterResponse:
-        if self._use_gemini:
-            return await self._gemini_call(user_prompt, generation_config)
-        return await self._openrouter_call(user_prompt, generation_config)
-
-    # ------------------------------------------------------------------
-    async def _gemini_call(self, user_prompt: str, generation_config) -> OpenRouterResponse:
-        import google.generativeai as genai
-        from google.generativeai.types import GenerationConfig
-
-        _ensure_gemini()
-
-        gc = None
-        if generation_config is not None:
-            gc = GenerationConfig(
-                max_output_tokens=getattr(generation_config, "max_output_tokens", None),
-                response_mime_type=getattr(generation_config, "response_mime_type", None),
-            )
-
-        model = genai.GenerativeModel(
-            self.model_name,
-            system_instruction=self.system_instruction,
-        )
-        try:
-            response = await model.generate_content_async(user_prompt, generation_config=gc)
-            return OpenRouterResponse(text=response.text)
-        except Exception as exc:
-            logger.error("gemini_error", model=self.model_name, error=str(exc))
-            raise
-
-    # ------------------------------------------------------------------
-    async def _openrouter_call(self, user_prompt: str, generation_config) -> OpenRouterResponse:
         max_tokens = getattr(generation_config, "max_output_tokens", None)
+
+        client = _get_gemini_client() if self._use_gemini else _get_openrouter_client()
 
         kwargs: dict = {
             "model": self.model_name,
@@ -113,17 +86,18 @@ class OpenRouterModel:
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
         # response_format / json_object mode is intentionally omitted — not all
-        # free OpenRouter models support it and it causes 400 errors. Agents
-        # already enforce JSON output via system prompts + markdown stripping.
+        # models support it and it causes 400 errors. Agents enforce JSON output
+        # via system prompts + markdown stripping.
 
         try:
-            response = await _get_openrouter_client().chat.completions.create(**kwargs)
+            response = await client.chat.completions.create(**kwargs)
             content = response.choices[0].message.content or ""
             return OpenRouterResponse(text=content)
         except Exception as exc:
             import openai
             if isinstance(exc, (openai.AuthenticationError, openai.PermissionDeniedError)):
-                logger.error("openrouter_auth_error", model=self.model_name, error=str(exc))
-                raise ValueError(f"OpenRouter Authentication Failed: {str(exc)}") from exc
-            logger.error("openrouter_error", model=self.model_name, error=str(exc))
+                provider = "Gemini" if self._use_gemini else "OpenRouter"
+                logger.error(f"{provider.lower()}_auth_error", model=self.model_name, error=str(exc))
+                raise ValueError(f"{provider} Authentication Failed: {str(exc)}") from exc
+            logger.error("model_call_error", model=self.model_name, error=str(exc))
             raise
